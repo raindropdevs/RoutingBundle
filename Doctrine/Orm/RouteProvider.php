@@ -3,12 +3,11 @@
 namespace Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm;
 
 use Symfony\Component\Routing\RouteCollection;
-use Symfony\Component\Routing\Exception\RouteNotFoundException;
-
 use Symfony\Component\HttpFoundation\Request;
-
 use Symfony\Cmf\Component\Routing\RouteProviderInterface;
-use Symfony\Cmf\Bundle\RoutingBundle\Doctrine\DoctrineProvider;
+use Symfony\Cmf\Bundle\RoutingBundle\Doctrine\RouteProvider as BaseRouteProvider;
+
+use Doctrine\ORM\Exception as DoctrineException;
 
 /**
  * Provider loading routes from Doctrine
@@ -19,50 +18,44 @@ use Symfony\Cmf\Bundle\RoutingBundle\Doctrine\DoctrineProvider;
  *
  * @author david.buchmann@liip.ch
  */
-class RouteProvider extends DoctrineProvider implements RouteProviderInterface
+class RouteProvider extends BaseRouteProvider implements RouteProviderInterface
 {
-    protected function getCandidates($url)
+
+    protected function findByName($name)
     {
-        $candidates = array();
-        if ('/' !== $url) {
-            if (preg_match('/(.+)\.[a-z]+$/i', $url, $matches)) {
-                $candidates[] = $url;
-                $url = $matches[1];
-            }
+        return $this->getRoutesRepository()->findOneBy(array('name' => $name));
+    }
 
-            $part = $url;
-            while (false !== ($pos = strrpos($part, '/'))) {
-                $candidates[] = $part;
-                $part = substr($url, 0, $pos);
-            }
-        }
+    protected function findManyByName($names)
+    {
+        return $this->getRoutesRepository()->findBy(array('name' => $names), array('position' => 'ASC'));
+    }
 
-        $candidates[] = '/';
+    protected function findManyByStaticPrefix($candidates)
+    {
+        return $this->getRoutesRepository()->findBy(array('staticPrefix' => $candidates), array('position' => 'ASC'));
+    }
 
-        return $candidates;
+    public function getRoutesByStaticPrefix($prefix)
+    {
+        return $this->findManyByStaticPrefix($prefix);
+    }
+
+    protected function getRoutesRepository()
+    {
+        return $this->getObjectManager()->getRepository($this->className);
     }
 
     /**
      * {@inheritDoc}
+     *
+     * This will return any entity found at the url or up the path to the
+     * prefix. In the extreme case this can also lead to an
+     * empty list being returned.
      */
-    public function getRouteByName($name, $parameters = array())
-    {
-        $route = $this->getRoutesRepository()->findBy(array('name' => $name));
-        if (!$route) {
-            throw new RouteNotFoundException("No route found for name '$name'");
-        }
-
-        return $route;
-    }
-
-    public function getRoutesByNames($names, $parameters = array())
-    {
-    }
-
     public function getRouteCollectionForRequest(Request $request)
     {
         $url = $request->getPathInfo();
-
         $candidates = $this->getCandidates($url);
 
         $collection = new RouteCollection();
@@ -72,7 +65,7 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
         }
 
         try {
-            $routes = $this->getRoutesRepository()->findByStaticPrefix($candidates, array('position' => 'ASC'));
+            $routes = $this->findManyByStaticPrefix($candidates);
 
             foreach ($routes as $key => $route) {
                 if (preg_match('/.+\.([a-z]+)$/i', $url, $matches)) {
@@ -82,11 +75,9 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
 
                     $route->setDefault('_format', $matches[1]);
                 }
-                // SYMFONY 2.1 COMPATIBILITY: tweak route name
-                $key = trim(preg_replace('/[^a-z0-9A-Z_.]/', '_', $key), '_');
                 $collection->add($key, $route);
             }
-        } catch (RepositoryException $e) {
+        } catch (DoctrineException $e) {
             // TODO: how to determine whether this is a relevant exception or not?
             // for example, getting /my//test (note the double /) is just an invalid path
             // and means another router might handle this.
@@ -94,10 +85,5 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
         }
 
         return $collection;
-    }
-
-    protected function getRoutesRepository()
-    {
-        return $this->getObjectManager()->getRepository($this->className);
     }
 }
