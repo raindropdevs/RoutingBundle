@@ -119,9 +119,6 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
     public function getRoutesByNames($names, $parameters = array())
     {
         return $this->findManyByName($names);
-        if (!$route) {
-            throw new RouteNotFoundException(sprintf("No routes found for paths '%s'", implode(', ', $names)));
-        }
     }
 
 }
