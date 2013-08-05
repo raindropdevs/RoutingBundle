@@ -7,12 +7,22 @@
         <parameter key="cmf_routing.route_entity_class">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\Route</parameter>
         <parameter key="cmf_routing.route_entity_provider">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\RouteProvider</parameter>
         <parameter key="cmf_routing.orm.content_repository_class">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\ContentRepository</parameter>
+        <parameter key="cmf_routing.orm.route_content_enhancer_field">_route_content</parameter>
+        <parameter key="cmf_routing.orm.route_content_enhancer_target">_content</parameter>
+        <parameter key="cmf_routing.orm.route_content_enhancer_class">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\RouteContentEnhancer</parameter>
     </parameters>
 
     <services>
 
+        <service id="cmf_routing.orm.route_content_enhancer" class="%cmf_routing.orm.route_content_enhancer_class%">
+            <argument>%cmf_routing.orm.route_content_enhancer_field%</argument>
+            <argument>%cmf_routing.orm.route_content_enhancer_target%</argument>
+            <argument type="service" id="cmf_routing.content_repository"/>
+            <tag name="dynamic_router_route_enhancer"/>
+        </service>
+
         <service id="cmf_routing.content_repository" class="%cmf_routing.orm.content_repository_class%">
-            <argument type="service" id="doctrine.orm.default_entity_manager" />
+            <argument type="service" id="doctrine" />
         </service>
 
         <service id="cmf_routing.route_provider" class="%cmf_routing.route_entity_provider%">
