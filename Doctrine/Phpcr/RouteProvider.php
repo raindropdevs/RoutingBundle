@@ -45,4 +45,12 @@ class RouteProvider extends BaseRouteProvider implements RouteProviderInterface
 
         return $collection;
     }
+
+    /**
+     * Let the provider use its own method
+     */
+    protected function getRoutesFromCandidates($candidates)
+    {
+        return $this->getObjectManager()->findMany($this->className, $candidates);
+    }
 }
