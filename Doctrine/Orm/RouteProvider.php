@@ -44,7 +44,10 @@ class RouteProvider extends BaseRouteProvider implements RouteProviderInterface
         return $collection;
     }
 
-    protected function getRoutesFromCandidates($candidates)
+    /**
+     * Retrieve routes from ORM
+     */
+    public function getRoutesFromCandidates($candidates)
     {
         return $this->getRoutesRepository()->findBy(array('staticPrefix' => $candidates), array('position' => 'ASC'));
     }
@@ -71,11 +74,9 @@ class RouteProvider extends BaseRouteProvider implements RouteProviderInterface
         return $this->getRoutesRepository()->findBy(array('name' => $names), array('position' => 'ASC'));
     }
 
-    public function getRoutesByStaticPrefix($prefix)
-    {
-        return $this->getRoutesFromCandidates($prefix);
-    }
-
+    /**
+     * Returns current route repository
+     */
     protected function getRoutesRepository()
     {
         return $this->getObjectManager()->getRepository($this->className);

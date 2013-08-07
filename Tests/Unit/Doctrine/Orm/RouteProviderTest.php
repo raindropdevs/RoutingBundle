@@ -101,7 +101,7 @@ class RouteProviderTest extends \PHPUnit_Framework_Testcase
 
         $expected = array('/test-route', '/other-route');
 
-        $foundRoutes = $routeProvider->getRoutesByStaticPrefix($expected);
+        $foundRoutes = $routeProvider->getRoutesFromCandidates($expected);
 
         foreach ($foundRoutes as $route) {
             $this->assertInstanceOf('Symfony\Component\Routing\Route', $route);

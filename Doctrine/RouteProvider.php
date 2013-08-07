@@ -98,7 +98,7 @@ abstract class RouteProvider extends DoctrineProvider implements RouteProviderIn
     /**
      * Let the provider use its own method
      */
-    abstract protected function getRoutesFromCandidates($candidates);
+    abstract public function getRoutesFromCandidates($candidates);
 
     /**
      * {@inheritDoc}
@@ -119,7 +119,7 @@ abstract class RouteProvider extends DoctrineProvider implements RouteProviderIn
      */
     public function getRoutesByNames($names, $parameters = array())
     {
-        return $this->getObjectManager()->findMany($this->className, $name);
+        return $this->getObjectManager()->findMany($this->className, $names);
     }
 
 }
