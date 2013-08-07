@@ -8,6 +8,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Cmf\Component\Routing\RouteObjectInterface;
 use Symfony\Cmf\Component\Routing\Enhancer\RouteEnhancerInterface;
 
+use Symfony\Cmf\Bundle\RoutingBundle\Doctrine\DoctrineProvider;
+
 /**
  * This enhancer sets the content to target field if the route provides content
  *
@@ -16,7 +18,7 @@ use Symfony\Cmf\Component\Routing\Enhancer\RouteEnhancerInterface;
  *
  * @author Matteo Caberlotto
  */
-class RouteContentEnhancer implements RouteEnhancerInterface
+class OrmRouteContentEnhancer implements RouteEnhancerInterface
 {
     /**
      * @var string field for the route class
@@ -29,11 +31,11 @@ class RouteContentEnhancer implements RouteEnhancerInterface
     protected $target;
 
     /**
-     * @param string $routefield        the field name of the route class
-     * @param string $target            the field name to set from the map
-     * @param array  $contentRepository the content repository used to retrieve objects
+     * @param string            $routefield        the field name of the route class
+     * @param string            $target            the field name to set from the map
+     * @param DoctrineProvider  $contentRepository the content repository used to retrieve objects
      */
-    public function __construct($routefield, $target, $contentRepository)
+    public function __construct($routefield, $target, DoctrineProvider $contentRepository)
     {
         $this->routefield = $routefield;
         $this->target = $target;
