@@ -2,13 +2,11 @@
 
 namespace Symfony\Cmf\Bundle\RoutingBundle\Doctrine;
 
-use PHPCR\RepositoryException;
+use Symfony\Component\HttpFoundation\Request;
 
 use Symfony\Component\Routing\Route as SymfonyRoute;
 use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
-
-use Symfony\Component\HttpFoundation\Request;
 
 use Symfony\Cmf\Component\Routing\RouteProviderInterface;
 
@@ -23,8 +21,20 @@ use Symfony\Cmf\Bundle\RoutingBundle\Doctrine\DoctrineProvider;
  *
  * @author david.buchmann@liip.ch
  */
-class RouteProvider extends DoctrineProvider implements RouteProviderInterface
+abstract class RouteProvider extends DoctrineProvider implements RouteProviderInterface
 {
+    /**
+     * The prefix to add to the url to create the repository path
+     *
+     * @var string
+     */
+    protected $idPrefix = '';
+
+    public function setPrefix($prefix)
+    {
+        $this->idPrefix = $prefix;
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -44,28 +54,21 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
             return $collection;
         }
 
-        try {
-            $routes = $this->findManyByName($candidates);
-            // filter for valid route objects
-            // we can not search for a specific class as PHPCR does not know class inheritance
-            // but optionally we could define a node type
-            foreach ($routes as $key => $route) {
-                if ($route instanceof SymfonyRoute) {
-                    if (preg_match('/.+\.([a-z]+)$/i', $url, $matches)) {
-                        if ($route->getDefault('_format') === $matches[1]) {
-                            continue;
-                        }
-
-                        $route->setDefault('_format', $matches[1]);
+        $routes = $this->getRoutesFromCandidates($candidates);
+        // filter for valid route objects
+        // we can not search for a specific class as PHPCR does not know class inheritance
+        // but optionally we could define a node type
+        foreach ($routes as $key => $route) {
+            if ($route instanceof SymfonyRoute) {
+                if (preg_match('/.+\.([a-z]+)$/i', $url, $matches)) {
+                    if ($route->getDefault('_format') === $matches[1]) {
+                        continue;
                     }
-                    $collection->add($key, $route);
+
+                    $route->setDefault('_format', $matches[1]);
                 }
+                $collection->add($key, $route);
             }
-        } catch (RepositoryException $e) {
-            // TODO: how to determine whether this is a relevant exception or not?
-            // for example, getting /my//test (note the double /) is just an invalid path
-            // and means another router might handle this.
-            // but if the PHPCR backend is down for example, we want to alert the user
         }
 
         return $collection;
@@ -92,14 +95,12 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
         return $candidates;
     }
 
-    protected function findByName($name)
+    /**
+     * Let the provider use its own method
+     */
+    protected function getRoutesFromCandidates($candidates)
     {
-        return $this->getObjectManager()->find($this->className, $name);
-    }
-
-    protected function findManyByName($name)
-    {
-        return $this->getObjectManager()->findMany($this->className, $name);
+        return $this->getObjectManager()->findMany($this->className, $candidates);
     }
 
     /**
@@ -108,7 +109,7 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
     public function getRouteByName($name, $parameters = array())
     {
         // $name is the route document path
-        $route = $this->findByName($name);
+        $route = $this->getObjectManager()->find($this->className, $name);
         if (!$route) {
             throw new RouteNotFoundException("No route found for path '$name'");
         }
@@ -116,9 +117,12 @@ class RouteProvider extends DoctrineProvider implements RouteProviderInterface
         return $route;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function getRoutesByNames($names, $parameters = array())
     {
-        return $this->findManyByName($names);
+        return $this->getObjectManager()->findMany($this->className, $name);
     }
 
 }

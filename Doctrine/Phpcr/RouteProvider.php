@@ -2,8 +2,12 @@
 
 namespace Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Phpcr;
 
-use Symfony\Cmf\Component\Routing\RouteProviderInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\RouteCollection;
 
+use PHPCR\RepositoryException;
+
+use Symfony\Cmf\Component\Routing\RouteProviderInterface;
 use Symfony\Cmf\Bundle\RoutingBundle\Doctrine\RouteProvider as BaseRouteProvider;
 
 /**
@@ -17,15 +21,28 @@ use Symfony\Cmf\Bundle\RoutingBundle\Doctrine\RouteProvider as BaseRouteProvider
  */
 class RouteProvider extends BaseRouteProvider implements RouteProviderInterface
 {
-    /**
-     * The prefix to add to the url to create the repository path
-     *
-     * @var string
-     */
-    protected $idPrefix = '';
 
-    public function setPrefix($prefix)
+    /**
+     * {@inheritDoc}
+     *
+     * This will return any document found at the url or up the path to the
+     * prefix. If any of the documents does not extend the symfony Route
+     * object, it is filtered out. In the extreme case this can also lead to an
+     * empty list being returned.
+     */
+    public function getRouteCollectionForRequest(Request $request)
     {
-        $this->idPrefix = $prefix;
+        try {
+            $collection = parent::getRouteCollectionForRequest($request);
+        } catch (RepositoryException $e) {
+            // TODO: how to determine whether this is a relevant exception or not?
+            // for example, getting /my//test (note the double /) is just an invalid path
+            // and means another router might handle this.
+            // but if the PHPCR backend is down for example, we want to alert the user
+
+            $collection = new RouteCollection();
+        }
+
+        return $collection;
     }
 }

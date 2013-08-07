@@ -21,31 +21,6 @@ use Doctrine\ORM\Exception as DoctrineException;
 class RouteProvider extends BaseRouteProvider implements RouteProviderInterface
 {
 
-    protected function findByName($name)
-    {
-        return $this->getRoutesRepository()->findOneBy(array('name' => $name));
-    }
-
-    protected function findManyByName($names)
-    {
-        return $this->getRoutesRepository()->findBy(array('name' => $names), array('position' => 'ASC'));
-    }
-
-    protected function findManyByStaticPrefix($candidates)
-    {
-        return $this->getRoutesRepository()->findBy(array('staticPrefix' => $candidates), array('position' => 'ASC'));
-    }
-
-    public function getRoutesByStaticPrefix($prefix)
-    {
-        return $this->findManyByStaticPrefix($prefix);
-    }
-
-    protected function getRoutesRepository()
-    {
-        return $this->getObjectManager()->getRepository($this->className);
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -55,35 +30,54 @@ class RouteProvider extends BaseRouteProvider implements RouteProviderInterface
      */
     public function getRouteCollectionForRequest(Request $request)
     {
-        $url = $request->getPathInfo();
-        $candidates = $this->getCandidates($url);
-
-        $collection = new RouteCollection();
-
-        if (empty($candidates)) {
-            return $collection;
-        }
-
         try {
-            $routes = $this->findManyByStaticPrefix($candidates);
-
-            foreach ($routes as $key => $route) {
-                if (preg_match('/.+\.([a-z]+)$/i', $url, $matches)) {
-                    if ($route->getDefault('_format') === $matches[1]) {
-                        continue;
-                    }
-
-                    $route->setDefault('_format', $matches[1]);
-                }
-                $collection->add($key, $route);
-            }
+            $collection = parent::getRouteCollectionForRequest($request);
         } catch (DoctrineException $e) {
             // TODO: how to determine whether this is a relevant exception or not?
             // for example, getting /my//test (note the double /) is just an invalid path
             // and means another router might handle this.
             // but if the PHPCR backend is down for example, we want to alert the user
+
+            $collection = new RouteCollection();
         }
 
         return $collection;
+    }
+
+    protected function getRoutesFromCandidates($candidates)
+    {
+        return $this->getRoutesRepository()->findBy(array('staticPrefix' => $candidates), array('position' => 'ASC'));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRouteByName($name, $parameters = array())
+    {
+        // $name is the route document path
+        $route = $this->getRoutesRepository()->findOneBy(array('name' => $name));
+        if (!$route) {
+            throw new RouteNotFoundException("No route found for path '$name'");
+        }
+
+        return $route;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRoutesByNames($names, $parameters = array())
+    {
+        return $this->getRoutesRepository()->findBy(array('name' => $names), array('position' => 'ASC'));
+    }
+
+    public function getRoutesByStaticPrefix($prefix)
+    {
+        return $this->getRoutesFromCandidates($prefix);
+    }
+
+    protected function getRoutesRepository()
+    {
+        return $this->getObjectManager()->getRepository($this->className);
     }
 }
