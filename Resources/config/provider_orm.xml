@@ -7,7 +7,7 @@
         <parameter key="cmf_routing.route_entity_class">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\Route</parameter>
         <parameter key="cmf_routing.route_entity_provider">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\RouteProvider</parameter>
         <parameter key="cmf_routing.orm.content_repository_class">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\ContentRepository</parameter>
-        <parameter key="cmf_routing.orm.route_content_enhancer_field">_route_content</parameter>
+        <parameter key="cmf_routing.orm.route_content_enhancer_field">_orm_route_content</parameter>
         <parameter key="cmf_routing.orm.route_content_enhancer_target">_content</parameter>
         <parameter key="cmf_routing.orm.route_content_enhancer_class">Symfony\Cmf\Bundle\RoutingBundle\Doctrine\Orm\RouteContentEnhancer</parameter>
     </parameters>
